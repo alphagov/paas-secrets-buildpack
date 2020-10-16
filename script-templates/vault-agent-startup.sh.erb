@@ -1,0 +1,21 @@
+<%# This script is generated from an ERB template so that it's possible to know %>
+<%# at run time which deps directory to use%>
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+echo "Fetching and setting secrets"
+
+if [ ! -d "/home/vcap/profile.d/" ]; then
+    mkdir "/home/vcap/profile.d/"
+fi
+
+ruby "<%= $deps_root %>/generate-secrets-env-vars.rb" > "/home/vcap/profile.d/<%= $index %>_secrets.sh"
+chmod +x "/home/vcap/profile.d/<%= $index %>_secrets.sh"
+
+echo "Writing Vault agent config to $HOME/vault-agent.hcl"
+ruby "<%= $deps_root %>/generate-agent-config.rb" > "$HOME/vault-agent.hcl"
+
+echo "Starting Vault agent"
+VAULT_AGENT_PATH="<%= $deps_dir %>/vault"
+$VAULT_AGENT_PATH agent -config="$HOME/vault-agent.hcl"

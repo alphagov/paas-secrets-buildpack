@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+
+require 'erb'
+require 'fileutils'
+
+$stdout.sync = true
+
+$index = ARGV[3]
+$build_dir = ARGV[0]
+$cache_dir = ARGV[1]
+$deps_dir = File.join(ARGV[2], $index)
+$buildpack_dir = File.expand_path __dir__+"/../"
+
+def install_vault_binary()
+  vault_version_file = bp_path("vault_version")
+  vault_version = IO.read(vault_version_file).chomp()
+
+  vault_zip_url = "https://releases.hashicorp.com/vault/#{vault_version}/vault_#{vault_version}_linux_amd64.zip"
+  zip_path = File.join($cache_dir, "vault.zip")
+
+  puts "Downloading Hashicorp Vault #{vault_version}"
+  `wget -q -O "#{zip_path}" "#{vault_zip_url}" &&
+  unzip -qq "#{zip_path}" -d "#{$deps_dir}"`
+end
+
+def install_scripts()
+  puts "Generating startup script"
+  startup_template_path = bp_path("script-templates/vault-agent-startup.sh.erb")
+  startup_renderer = ERB.new(IO.read(startup_template_path))
+  IO.write(deps_path("vault-agent-startup.sh"), startup_renderer.result())
+
+  # Agent config must be generated when the app
+  # starts in order to know which secrets API to use.
+  FileUtils.copy(
+    bp_path("scripts/generate-agent-config.rb"),
+    deps_path("generate-agent-config.rb")
+  )
+
+  # Secrets generation script must be generated during
+  # staging in order to know where the Vault binary lives.
+  puts "Generating env var generation script"
+  env_var_template_path = bp_path("script-templates/generate-secrets-env-vars.rb.erb")
+  env_var_renderer = ERB.new(IO.read(env_var_template_path))
+  IO.write(deps_path("generate-secrets-env-vars.rb"), env_var_renderer.result())
+end
+
+def bp_path(relative_path)
+  File.expand_path(File.join($buildpack_dir, relative_path))
+end
+
+def deps_path(relative_path)
+  File.expand_path(File.join($deps_dir, relative_path))
+end
+
+install_vault_binary()
+install_scripts()
+create_sidecar_config()
