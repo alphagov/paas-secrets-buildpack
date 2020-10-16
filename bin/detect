@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+secrets_file_path = File.join ARGV[0] "app-secrets.yml"
+
+if File.exist?(secrets_file_path)
+    exit 0
+else
+    exit 1
+end
