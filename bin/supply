@@ -28,6 +28,7 @@ def install_scripts()
   startup_template_path = bp_path("script-templates/vault-agent-startup.sh.erb")
   startup_renderer = ERB.new(IO.read(startup_template_path))
   IO.write(deps_path("vault-agent-startup.sh"), startup_renderer.result())
+  FileUtils.chmod("+x", deps_path("vault-agent-startup.sh"))
 
   # Agent config must be generated when the app
   # starts in order to know which secrets API to use.
@@ -42,6 +43,20 @@ def install_scripts()
   env_var_template_path = bp_path("script-templates/generate-secrets-env-vars.rb.erb")
   env_var_renderer = ERB.new(IO.read(env_var_template_path))
   IO.write(deps_path("generate-secrets-env-vars.rb"), env_var_renderer.result())
+end
+
+def create_sidecar_config
+  launch_yml = %Q{
+---
+processes:
+  - type: vault-agent
+    command: "/home/vcap/deps/#{$index}/vault-agent-startup.sh"
+    platforms:
+      cloudfoundry:
+        sidecar_for: ["web"]
+}
+
+  IO.write(File.join($deps_dir, "launch.yml"), launch_yml)
 end
 
 def bp_path(relative_path)
