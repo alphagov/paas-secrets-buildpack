@@ -23,4 +23,4 @@ ruby "<%= $deps_root %>/generate-agent-config.rb" > "$HOME/vault-agent.hcl"
 
 echo "Starting Vault agent"
 VAULT_AGENT_PATH="<%= $deps_root %>/vault"
-$VAULT_AGENT_PATH agent -config="$HOME/vault-agent.hcl"
+$VAULT_AGENT_PATH agent -log-level=err -config="$HOME/vault-agent.hcl"
