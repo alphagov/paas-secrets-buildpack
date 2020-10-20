@@ -1,5 +1,5 @@
 home = ENV["HOME"]
-secrets_url = ENV["SECRETS_API"]
+secrets_url = ENV["VAULT_ADDR"]
 tmp_dir = ENV["TMPDIR"]
 
 puts %Q{

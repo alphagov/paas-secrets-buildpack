@@ -15,9 +15,6 @@ if [ ! -d "/home/vcap/profile.d/" ]; then
     mkdir "/home/vcap/profile.d/"
 fi
 
-ruby "<%= $deps_root %>/generate-secrets-env-vars.rb" > "/home/vcap/profile.d/<%= $index %>_secrets.sh"
-chmod +x "/home/vcap/profile.d/<%= $index %>_secrets.sh"
-
 echo "Writing Vault agent config to $HOME/vault-agent.hcl"
 ruby "<%= $deps_root %>/generate-agent-config.rb" > "$HOME/vault-agent.hcl"
 

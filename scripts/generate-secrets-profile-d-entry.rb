@@ -1,19 +1,18 @@
-<%# This script is generated from an ERB template so that it's possible to know %>
-<%# at run time which deps directory to use%>
 #!/usr/bin/env ruby
 
 require 'yaml'
 require 'json'
 
-$vault = "/home/vcap/deps/<%= $index %>/vault"
+def generate_secrets_profile_d_entry(config_path, index)
+    vault = "/home/vcap/deps/#{index}/vault"
 
-def authenticate_with_vault()
-    `#{$vault} login -method=cf role=apps`
+    secrets_config = read_secrets_config(config_path)
+    app_details = read_app_details()
+    write_secrets_for_profile_d(secrets_config, app_details, vault)
 end
 
-def read_secrets_config()
-    app_secrets_file_path = File.expand_path(File.join(ENV["HOME"], "app-secrets.yml"))
-    return YAML.safe_load(IO.read(app_secrets_file_path))
+def read_secrets_config(path)
+    return YAML.safe_load(IO.read(path))
 end
 
 def read_app_details()
@@ -26,7 +25,7 @@ def read_app_details()
     }
 end
 
-def write_secrets_to_profile_d(secrets_config, app_details)
+def write_secrets_for_profile_d(secrets_config, app_details, vault_path)
     # Secrets config is a set of key value pairs in the format
     # ENV_VAR_NAME = path/to/secret:key_within_secret
     #
@@ -42,16 +41,22 @@ def write_secrets_to_profile_d(secrets_config, app_details)
     secrets_config.each do |env_var_name, path_and_key|
         original_path, key = split_configured_path(path_and_key)
         path_without_placeholders = replace_path_placeholders(original_path, app_details)
-        secret_value = read_secret_value(path_without_placeholders, key)
+        secret_value = read_secret_command(vault_path, path_without_placeholders, key)
 
         secrets_pairs[env_var_name] = secret_value
     end
 
-    profile_d_content = secrets_pairs
+    joined_export_commands = secrets_pairs
         .map{ |key, value| "export #{key}=#{value}" }
         .join("\n")
 
-    puts profile_d_content
+
+
+    return %Q{
+#{vault_path} login -method=cf role=apps
+
+#{joined_export_commands}
+    }
 end
 
 def replace_path_placeholders(path, app_details)
@@ -78,11 +83,6 @@ def split_configured_path(path_and_key)
     return [parts[0], parts[1]]
 end
 
-def read_secret_value(path, key)
-    `#{$vault} kv get -field="#{key}" "#{path}"`
+def read_secret_command(vault_path, path, key)
+    return "$(#{vault_path} kv get -field=\"#{key}\" \"#{path}\")"
 end
-
-authenticate_with_vault()
-secrets_config = read_secrets_config()
-app_details = read_app_details()
-write_secrets_to_profile_d(secrets_config, app_details)
