@@ -53,7 +53,7 @@ def write_secrets_for_profile_d(secrets_config, app_details, vault_path)
 
 
     return %Q{
-#{vault_path} login -method=cf role=apps
+#{vault_path} login -no-print -method=cf role=apps
 
 #{joined_export_commands}
     }
