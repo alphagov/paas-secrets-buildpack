@@ -4,8 +4,13 @@
 
 set -euo pipefail
 
-echo "Fetching and setting secrets"
+<%
+# During staging, `$deps_dir` is a temporary directory,
+# but at runtime the path is different.
+$deps_root = "/home/vcap/deps/#{$index}"
+%>
 
+echo "Fetching and setting secrets"
 if [ ! -d "/home/vcap/profile.d/" ]; then
     mkdir "/home/vcap/profile.d/"
 fi
@@ -17,5 +22,5 @@ echo "Writing Vault agent config to $HOME/vault-agent.hcl"
 ruby "<%= $deps_root %>/generate-agent-config.rb" > "$HOME/vault-agent.hcl"
 
 echo "Starting Vault agent"
-VAULT_AGENT_PATH="<%= $deps_dir %>/vault"
+VAULT_AGENT_PATH="<%= $deps_root %>/vault"
 $VAULT_AGENT_PATH agent -config="$HOME/vault-agent.hcl"
