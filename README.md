@@ -3,9 +3,19 @@
 CloudFoundry buildpack used by apps to get secrets out of Vault and in to environment variables.
 
 ## Usage
-Add an `app-secrets.yml` file to the root of your app. The keys are the name of the desired environment variable, and the values are the names of the secrets
+```
+---
+NOTIFY_API_KEY: "$ORG_PATH/notify:api_key"
+AWS_ACCESS_KEY_ID: "$APP_GUID_PATH/aws:AWS_ACCESS_KEY_ID"
+AWS_SECRET_ACCESS_KEY: "$APP_GUID_PATH/aws:AWS_SECRET_ACCESS_KEY"
+```
 
-The name of a secret is the path to the secret, and the key within that secret, separated by a colon: `/path/to/secret:key`.
+Add an `app-secrets.yml` file to the root of your app. It describes which environment variables should hold which secret value.
+
+To map a particular secret value, provide its path, a colon, and the key within that secret. For example: `path/to/secret:key`.
+
+## Placeholders
+Paths for secrets in GOV.UK PaaS always the org guid of the org, and can also contain the space and app guids. Since they cannot be known at development time, the buildpack provides a number of placeholders that get substituted at runtime.
 
 Secret paths can contain a number of placeholders, which are substituted when the app starts up
 
@@ -17,16 +27,6 @@ Secret paths can contain a number of placeholders, which are substituted when th
     e.g. `/cloudfoundry/orgs/guid-123/spaces/guid-456/apps/guid-789`
 * `$APP_NAME_PATH` path to the app level secrets using the name, without a trailing slash
     e.g. `/cloudfoundry/orgs/guid-123/spaces/guid-456/apps/app-name`
-
-
-Example `app-secrets.yml`
-
-```
----
-NOTIFY_API_KEY: "$ORG_PATH/notify:api_key"
-AWS_ACCESS_KEY_ID: "$APP_GUID_PATH/aws:AWS_ACCESS_KEY_ID"
-AWS_SECRET_ACCESS_KEY: "$APP_GUID_PATH/aws:AWS_SECRET_ACCESS_KEY"
-```
 
 **Why not `secrets.yml`?**
 
